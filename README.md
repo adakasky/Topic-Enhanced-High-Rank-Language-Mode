@@ -1,1 +1,1 @@
-# Topic-Enhanced-High-Rank-Language-Mode
+# Topic-Enhanced-High-Rank-Language-Model
