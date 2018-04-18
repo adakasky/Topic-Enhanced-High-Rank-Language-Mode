@@ -12,6 +12,7 @@
 .idea/
 
 # data files
+log/
 data/
 models/
 checkpoints/
