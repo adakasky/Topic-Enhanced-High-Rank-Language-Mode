@@ -1,0 +1,116 @@
+%
+% File acl2018.tex
+%
+%% Based on the style files for ACL-2017, with some changes, which were, in turn,
+%% Based on the style files for ACL-2015, with some improvements
+%%  taken from the NAACL-2016 style
+%% Based on the style files for ACL-2014, which were, in turn,
+%% based on ACL-2013, ACL-2012, ACL-2011, ACL-2010, ACL-IJCNLP-2009,
+%% EACL-2009, IJCNLP-2008...
+%% Based on the style files for EACL 2006 by 
+%%e.agirre@ehu.es or Sergi.Balari@uab.es
+%% and that of ACL 08 by Joakim Nivre and Noah Smith
+
+\documentclass[11pt,a4paper]{article}
+\usepackage[hyperref]{acl2018}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{url}
+
+\aclfinalcopy % Uncomment this line for the final submission
+%\def\aclpaperid{***} %  Enter the acl Paper ID here
+
+%\setlength\titlebox{5cm}
+% You can expand the titlebox if you need extra space
+% to show all the authors. Please do not make the titlebox
+% smaller than 5cm (the original size); we will check this
+% in the camera-ready version and ask you to change it back.
+
+\newcommand\BibTeX{B{\sc ib}\TeX}
+
+\title{Topic-Enhanced High-Rank Language Model}
+
+\author{Ao Liu \hspace{2cm} Yichi Zhang\\
+  University of Massachusetts Amherst\\
+  College of Information and Computer Science\\
+  {\tt \{aoliu, yiczhang\}@cs.umass.edu}\\
+  March 30th, 2018}
+
+
+\begin{document}
+\maketitle
+\begin{abstract}
+  Using language models to help learning the word embeddings has dominated the natural language processing (NLP) community since first introduced by \citet{bengio2003neural}.  Many recent researches focus on disambiguating word meanings by surrounding contexts \citep{mccann2017learned, peters2018deep}. We assume that such contexts form some abstract topics of sentences, so that topic of a sentence can affect the word semantics. Thus, we tend to use topic model to enhance the language model to solve the problem of word ambiguity. Meanwhile, models based on conventional softmax decoding lack of expressiveness due to the softmax bottleneck, whereas Mixture of softmax (MoS) enables the probability matrix of a language model to have high-rank so as to increase the expressiveness \citep{yang2017breaking}. We attempt to adapt the idea of MoS to help us build a topic-enhanced high-rank language model.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+Statistical language modelling has evolved from traditional N-gram language models to neural language models over the past two decades \citep{bengio2003neural, mikolov2010recurrent}. Traditional N-gram approaches rely on Markov assumption, which usually has a high cost to learn long-distance dependency. The introduction of RNN-based language model relieves such burden by computing the conditional probability of a word given all previous words using hidden state\citep{mikolov2010recurrent}. Despite the difference of model architectures, statistical language models factorize the probability of joint probability of a given sequence $S = (w_1, ..., w_N)$ into conditional probabilities: $P(S) = \prod\limits_{t=1}^N P(w_t | w_{m:t})$, where $w_{m:t}$ is the sequence $w_m, w_{m + 1}, ..., w_t$. Notice that when $m = t - N + 1$, the factorization is for N-gram models, whereas when $m = 1$, the conditional probability is based on all previous words.
+
+Although RNN-based language models have higher generalizability by capturing long-distance information, they may in practice encounter overfitting issues \citep{srivastava2014dropout}. A general goal of language model is to capture both the syntax and the semantic coherence in the language. Syntactic structures mostly depend on local context, and semantic dependencies can have arbitrary long distance.
+
+Probabilistic topic model is one way to learn such semantic coherence \citep{blei2009topic}. A general goal of probabilistic topic models is to learn abstract topics formed by groups of words and to express documents as combinations of those topics. By doing so, such abstract topics are then embedded with semantic dependencies over the words and could potentially be utilized by language model to capture long-distance information without overfitting.
+
+To further enlarge the expressiveness of our model, we incorporate MoS to our decoder. The reason is that MoS provides a high-rank probability matrix, whereas conventional softmax is low-rank and can only approximate the true distribution \citet{yang2017breaking}.
+
+\section{Related Works}
+\label{sec:related_works}
+In this section, we only describe previous works that are most related to our approach and describe some different decisions we make.
+
+\subsection{TopicRNN \citep{dieng2016topicrnn}}
+\label{subsec:topicrnn}
+\citet{dieng2016topicrnn} introduce TopicRNN to provide a way of incorporating topic model into language model to learn better contextualized word embeddings. Instead of passing the learned topic representation of a sentence through the RNN as the hidden states, they separate global semantics from local syntax representations and directly add the topic representation to non-stop words. By doing so, they exclude the effects of stop words. We will try encrypting the topics using a softmax-based method, so that each word in a sentence may be related to different topics, because a complex sentence usually contains different topics.
+
+\subsection{Embeddings from Language Models (ELMo)\citep{peters2018deep}}
+\label{subsec:elmo}
+\citet{peters2018deep} propose a method to add softmax weights on the embeddings learned from bidirectional language model:
+\begin{equation}
+\mathbf{ELMo}_k^{task}
+= \gamma^{task}\sum\limits_{j=0}^L s_j^{task}\mathbf{h}_{k,j}
+\end{equation}
+where $k$ is the position of the token, $L$ is the number of layers, $\mathbf{h}$ is the hidden states, $\mathbf{s}^{task}$ are softmax-normalized weights and $\gamma^{task}$ is the scalar parameter. The bidirectional language model can be unsupervisedly trained on large corpus. And then to adapt the learned word embeddings to a downstream task, they first fine-tune the word embeddings on the target dataset and then simultaneously train the task model parameters and the softmax parameters to give weights for word embeddings learned by different layer of the language model. Instead of fine tuning the model on supervised tasks to get task-specific word embeddings, we tend to let the model learn both syntactic and semantic contextual informations and learn the best contextualized word embeddings all by itself in an unsupervised manner without the help of labelled data.
+
+\subsection{Mixture of Softmax \citep{yang2017breaking}}
+\label{subsec:mos}
+\citet{yang2017breaking} prove that to better model language, we should allow the probability matrix to have high rank in order to increase the expressiveness of a model. They suggest a technique called Mixture of Softmax has the form: \\
+\begin{align}
+P(w_i|w_{1:t}) = \sum\limits_{k=1}^K \pi_{w_{1:t},k}\frac{\exp(\mathbf{h}_{w_{1:t}, k}^T)\mathbf{w}_t}{\sum\limits_{t'=1}^N \exp(\mathbf{h}_{w_{1:t'}, k}^T)\mathbf{w}_t'}
+\end{align}
+, where $\pi_{w_{1:t},k}$ is the prior or mixture weights of the $k$-th component and $\mathbf{h}_{w_{1:t}, k}$ is the $k$-th context vector associated with context $w_{1:t}$. By doing so, MoS improves the expressiveness over conventional softmax by allowing the probability matrix to be high-rank. They adapt MoS to AWD-LSTM by \citet{merity2017regularizing} and achieves the state-of-the-art performance on several language modelling datasets. Their model does not  incorporate much topical information and merely uses a latent discrete decision as the topic to predict the next word. To improve on that, we will use a topic model to provide abstract representation to enhance the topical information in the model.
+
+\section{Dataset}
+\label{sec:dataset}
+The two datasets listed below are the ones that we will train and test our proposed language model. Due to the purpose of language model, no annotations would be needed.
+
+\subsection{Penn Treebank (PTB)}
+\label{subsec:penn_treebank}
+The Penn Treebank (PTB) project selected 2,499 stories from a three year Wall Street Journal (WSJ) collection of 98,732 stories for syntactic annotation \citep{marcus1993building}. It is a standard benchmark for assessing new language models. We will use the standard split, where sections 0-20 (930K tokens) are used for training, sections 21-22 (74K tokens) for validation, and sections 23-24 (82K tokens) for testing.
+
+\subsection{WikiText-2}
+\label{subsec:wikitext2}
+The WikiText language modeling dataset is a collection of over 100 million tokens extracted from the set of verified good and featured articles on Wikipedia \citep{merity2016pointer}. Compared to the preprocessed version of PTB, WikiText-2 (WT2) is over 2 times larger. The WikiText dataset also features a far larger vocabulary and retains the original case, punctuation and numbers - all of which are removed in PTB. As it is composed of full articles, the dataset is well suited for models that can take advantage of long term dependencies. We will use the splits built in the dataset for training, development and testing respectively.
+
+\section{Software and Packages}
+\label{software_package}
+Since we will implement a deep neural model, either Tensorflow or PyTorch will be used to help building the model architecture.
+
+\subsection{Tensorflow}
+\label{subsec:tensorflow}
+TensorFlow is an open source software library for high performance numerical computation. Its flexible architecture allows easy deployment of computation across a variety of platforms (CPUs, GPUs, TPUs), and from desktops to clusters of servers to mobile and edge devices. Originally developed by researchers and engineers from the Google Brain team within Google’s AI organization, it comes with strong support for machine learning and deep learning and the flexible numerical computation core is used across many other scientific domains.
+
+\subsection{PyTorch}
+\label{subsec:pytorch}
+PyTorch is a Python package that provides two high-level features: 1) Tensor computation (like NumPy) with strong GPU acceleration and 2) Deep neural networks built on a tape-based autograd system.
+
+\section{Preliminary Experiment}
+\label{experiment}
+To evaluate our model, we will compare the model perplexities over the two datasets we use. We will also test on the effectiveness of our topic-enhancing method and the generalizability of high-rank MoS-based decoding to our model.
+
+\bibliography{proposal}
+\bibliographystyle{acl_natbib}
+
+\appendix
+
+\end{document}

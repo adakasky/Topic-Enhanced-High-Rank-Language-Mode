@@ -1,0 +1,2 @@
+model_checkpoint_path: "D:\\Robert\\UMA\\2018Spring\\CMPSCI690N\\project\\src\\log\\model.ckpt"
+all_model_checkpoint_paths: "D:\\Robert\\UMA\\2018Spring\\CMPSCI690N\\project\\src\\log\\model.ckpt"
