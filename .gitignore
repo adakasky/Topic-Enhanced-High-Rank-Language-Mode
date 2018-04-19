@@ -1,5 +1,5 @@
-# .gitignore
-.gitignore
+# eval file
+SCWS
 
 # .tex auxiliaries
 *.bbl
